@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penghitung Rencana Cut & Fill</title>
+  <!-- Load Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Load Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Configure Tailwind to use Inter font and new Industrial colors -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            // Navy Blue - Modern Industrial Primary
+            'primary-dark': '#0F172A', // Slate 900
+            // Burnt Orange/Rust - Industrial Accent
+            'accent-orange': '#F97316', // Orange 500
+            'accent-orange-hover': '#EA580C', // Orange 600
+            // Light Background
+            'background-light': '#F1F5F9', // Slate 100
+            'text-main': '#1E293B', // Slate 800
+          }
+        },
+      }
+    }
+  </script>
+  <!-- Load Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+  <style>
+    /* Biar teks dan input di tabel sejajar tengah */
+    table th, table td {
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    /* Biar input number di tengah cell */
+    table input[type="number"] {
+      display: block;
+      margin: 0 auto;
+      text-align: center;
+      /* Style tambahan untuk input di mode industrial */
+      border: 1px solid #CBD5E1; /* Slate 300 */
+      transition: all 0.2s;
+    }
+
+    table input[type="number"]:focus {
+      border-color: #0F172A; /* Fokus pada Navy Blue */
+      box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2); /* Bayangan fokus Navy */
+    }
+
+        #welcomePage {
+      transition: opacity 0.5s ease-in-out;
+    }
+
+  </style>
+
+<body class="bg-background-light text-text-main font-sans min-h-screen flex flex-col">
+
+    <!-- Welcome Page Overlay -->
+  <div id="welcomePage" class="fixed inset-0 bg-primary-dark flex flex-col items-center justify-center text-white z-50">
+  <img src="psc.png" alt="Logo" class="w-40 h-35 mb-6 rounded-full shadow-lg">
+  <h1 class="text-4xl font-extrabold mb-4 text-accent-orange tracking-wider uppercase">Selamat Datang!</h1>
+  <p class="mb-6 text-gray-300 text-lg text-center">Aplikasi Penghitung Rencana Cut & Fill<br>by: Petra Sola Christian</p>
+  <button onclick="startApp()" class="px-8 py-3 bg-accent-orange text-primary-dark font-bold rounded-lg shadow-lg hover:bg-accent-orange-hover transition-transform transform hover:scale-105">
+    Mulai Sekarang
+  </button>
+</div>
+
+
+
+  <!-- Header - Solid Navy Blue -->
+  <header class="bg-primary-dark text-white shadow-lg">
+  <div class="max-w-7xl mx-auto py-4 px-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="psc.png" alt="Logo" class="w-12 h-12 rounded-full">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">PENGHITUNG RENCANA CUT & FILL</h1>
+        <p class="text-xs sm:text-sm text-gray-300">Project by: Petra Sola Christian</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+  <!-- Main Content -->
+  <main class="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- Card Input Utama (Main Control) -->
+    <div class="bg-white shadow-xl rounded-lg p-6 mb-8 border-t-4 border-accent-orange">
+      <h2 class="text-2xl font-bold mb-4 text-primary-dark">Kontrol Utama</h2>
+      <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+        <div class="flex-grow">
+          <label for="numPatok" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Patok:</label>
+          <input type="number" id="numPatok" min="2" value="3"
+  class="w-24 sm:w-32 p-2 border border-gray-300 rounded-md text-center shadow-sm focus:ring-2 focus:ring-primary-dark focus:border-primary-dark transition duration-200">
+        </div>
+        <!-- Button dengan aksen Orange/Industrial -->
+        <button onclick="generateInputTable()" class="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 bg-accent-orange text-primary-dark font-semibold rounded-md shadow-lg hover:bg-accent-orange-hover transition duration-300 transform hover:scale-[1.02]">
+          Buat Tabel Input
+        </button>
+      </div>
+    </div>
+
+    <!-- Area Input Data (Dynamic) -->
+    <div id="inputArea" class="space-y-6">
+      <!-- Dynamic input tables will be generated here -->
+    </div>
+
+    <!-- Button Hitung -->
+    <div id="calculateButtonContainer" class="mt-8 flex justify-center hidden">
+      <!-- Button utama dengan background Navy Blue -->
+      <button onclick="hitungCutFill()" class="w-full sm:w-auto px-10 py-3 bg-primary-dark text-white font-bold rounded-lg shadow-xl hover:bg-gray-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-accent-orange">
+        Hitung Volume Cut & Fill
+      </button>
+    </div>
+
+    <!-- Card Hasil Perhitungan -->
+    <div id="outputArea" class="mt-8">
+      <!-- Output table will be generated here -->
+    </div>
+
+    <!-- Card Grafik -->
+    <div id="chartContainer" class="mt-8 bg-white shadow-xl rounded-lg p-6 border border-gray-300 hidden">
+      <h2 class="text-2xl font-bold mb-4 text-primary-dark border-b pb-2">Grafik Volume Cut & Fill</h2>
+      <div class="relative h-72 sm:h-96">
+        <canvas id="volumeChart"></canvas>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer - Darker Navy -->
+  <footer class="bg-primary-dark/95 mt-10 border-t border-accent-orange/50">
+    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-400">
+      Designed by Petra Sola Christian_25 4101 04524
+    </div>
+  </footer>
+
+  <script>
+    // Global variable for chart instance
+    let barChart = null;
+
+    // --- Helper Functions for UI Generation ---
+
+    function generateInputTable() {
+      const numPatokInput = document.getElementById('numPatok');
+      const numPatok = parseInt(numPatokInput.value);
+      const inputArea = document.getElementById('inputArea');
+      const calculateBtnContainer = document.getElementById('calculateButtonContainer');
+      const outputArea = document.getElementById('outputArea');
+      const chartContainer = document.getElementById('chartContainer');
+
+      // Clear previous outputs
+      outputArea.innerHTML = '';
+      chartContainer.classList.add('hidden');
+      if (barChart) barChart.destroy();
+
+      // Basic validation
+      if (isNaN(numPatok) || numPatok < 2) {
+        // Mengubah alert menjadi pesan di UI
+        showMessage('Validasi Gagal', 'Jumlah Patok minimal adalah 2!', 'error');
+        numPatokInput.value = 2;
+        inputArea.innerHTML = '';
+        calculateBtnContainer.classList.add('hidden');
+        return;
+      }
+
+      let html = '';
+
+      // 1. Tabel Data Elevasi dan Jarak
+      html += `
+        <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-primary-dark">Data Elevasi dan Jarak Antar Patok</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-300">
+              <!-- Header tabel dengan Navy Blue -->
+              <thead class="bg-primary-dark text-white">
+                <tr>
+                  <th class="px-3 py-3 text-xs font-medium uppercase tracking-wider rounded-tl-lg">Patok</th>
+                  <th class="px-3 py-3 text-xs font-medium uppercase tracking-wider">Elevasi Tanah (m)</th>
+                  <th class="px-3 py-3 text-xs font-medium uppercase tracking-wider rounded-tr-lg">Jarak ke Patok Berikutnya (m)</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+      `;
+
+      for (let i = 1; i <= numPatok; i++) {
+        const nextInput = i < numPatok ?
+          `<input type="number" id="jarak${i}" step="0.01" class="w-20 p-2 border-gray-300 rounded-md">` :
+          `<span class="text-gray-500">-</span>`;
+
+        html += `
+          <tr>
+            <td class="px-3 py-2 whitespace-nowrap font-medium text-center">P${i}</td>
+            <td class="px-3 py-2 whitespace-nowrap">
+              <input type="number" id="elev${i}" step="0.01" class="w-20 p-2 border-gray-300 rounded-md">
+            </td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">
+              ${nextInput}
+            </td>
+          </tr>
+        `;
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // 2. Tabel Data Lebar Slag
+      html += `
+        <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-primary-dark">Data Lebar Slag (Lebar Jalur Ukur)</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-300">
+              <!-- Header tabel dengan Navy Blue -->
+              <thead class="bg-primary-dark text-white">
+                <tr>
+                  <th class="px-3 py-3 text-xs font-medium uppercase tracking-wider rounded-tl-lg">Slag</th>
+                  <th class="px-3 py-3 text-xs font-medium uppercase tracking-wider rounded-tr-lg">Lebar Jalur Ukur (m)</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+      `;
+
+      for (let i = 1; i < numPatok; i++) {
+        html += `
+          <tr>
+            <td class="px-3 py-2 whitespace-nowrap font-medium text-center">Slag ${i}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">
+              <input type="number" id="lebar${i}" step="0.01" class="w-20 p-2 border-gray-300 rounded-md">
+            </td>
+          </tr>
+        `;
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // 3. Input Elevasi Rencana
+      html += `
+        <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h3 class="text-xl font-semibold mb-4 border-b pb-2 text-primary-dark">Elevasi Rencana Cut & Fill</h3>
+          <div class="flex items-center gap-4">
+            <label for="elevRencana" class="text-sm font-medium text-gray-700">Elevasi Rencana (m):</label>
+            <input type="number" id="elevRencana" step="0.01"
+  class="w-32 p-2 border border-gray-300 rounded-md text-center shadow-sm focus:ring-2 focus:ring-primary-dark focus:border-primary-dark transition duration-200">
+
+          </div>
+        </div>
+      `;
+
+      inputArea.innerHTML = html;
+      calculateBtnContainer.classList.remove('hidden');
+    }
+
+    // --- Core Calculation Logic (Updated UI Colors) ---
+
+    // Mengganti alert dengan fungsi showMessage custom
+    function showMessage(title, message, type = 'error') {
+      const bgColor = type === 'error' ? 'bg-red-50 border-red-400 text-red-700' : 'bg-green-50 border-green-400 text-green-700';
+      const outputArea = document.getElementById('outputArea');
+
+      // Hapus pesan lama
+      const existingMessage = document.getElementById('uiMessage');
+      if (existingMessage) existingMessage.remove();
+
+      const messageHTML = `
+        <div id="uiMessage" class="${bgColor} border px-4 py-3 rounded-lg relative mb-4 shadow-sm" role="alert">
+          <strong class="font-bold">${title}:</strong>
+          <span class="block sm:inline">${message}</span>
+        </div>
+      `;
+      // Sisipkan pesan di atas outputArea jika ada, atau di atas inputArea jika outputArea kosong
+      if (outputArea.children.length === 0) {
+        document.getElementById('inputArea').insertAdjacentHTML('afterend', messageHTML);
+      } else {
+        outputArea.insertAdjacentHTML('afterbegin', messageHTML);
+      }
+
+      // Hapus pesan error setelah 5 detik
+      if (type === 'error') {
+        setTimeout(() => {
+          const msg = document.getElementById('uiMessage');
+          if (msg) msg.remove();
+        }, 5000);
+      }
+    }
+
+    function hitungCutFill() {
+      const numPatok = parseInt(document.getElementById('numPatok').value);
+      const elevRencanaInput = document.getElementById('elevRencana');
+      const elevRencana = parseFloat(elevRencanaInput.value);
+
+      let valid = true;
+      const allInputs = document.querySelectorAll('#inputArea input[type="number"]');
+
+      allInputs.forEach(inp => {
+        inp.classList.remove('border-red-500', 'bg-red-100');
+        // Gunakan kelas baru untuk error: border-accent-orange tebal
+        inp.classList.remove('border-accent-orange', 'ring-2');
+        if (inp.value === '' || isNaN(parseFloat(inp.value))) {
+          inp.classList.add('border-accent-orange', 'ring-2', 'ring-offset-2', 'ring-accent-orange/50');
+          valid = false;
+        }
+      });
+
+      // Hapus pesan lama
+      const existingMessage = document.getElementById('uiMessage');
+      if (existingMessage) existingMessage.remove();
+
+      if (!valid) {
+        showMessage('Validasi Gagal', 'Semua input wajib diisi dengan angka yang valid!', 'error');
+        return;
+      }
+
+      const outputArea = document.getElementById('outputArea');
+      const chartContainer = document.getElementById('chartContainer');
+      let hasilHTML = '';
+
+      // Card Hasil
+      hasilHTML += `
+        <div class="bg-white shadow-xl rounded-lg p-6 border border-gray-300">
+          <h3 class="text-2xl font-bold mb-4 border-b-2 border-accent-orange pb-2 text-primary-dark">Rincian Hasil Perhitungan Volume</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-300 text-sm">
+              <!-- Header tabel dengan Navy Blue -->
+              <thead class="bg-primary-dark text-white text-xs uppercase">
+                <tr>
+                  <th class="px-3 py-3 text-left">Slag</th>
+                  <th class="px-3 py-3 text-center">Elevasi P1 (m)</th>
+                  <th class="px-3 py-3 text-center">Elevasi P2 (m)</th>
+                  <th class="px-3 py-3 text-center">Δ1 (m)</th>
+                  <th class="px-3 py-3 text-center">Δ2 (m)</th>
+                  <th class="px-3 py-3 text-center">Jarak (m)</th>
+                  <th class="px-3 py-3 text-center">Luas Penampang (m²)</th>
+                  <th class="px-3 py-3 text-center">Lebar (m)</th>
+                  <th class="px-3 py-3 text-center">Volume (m³)</th>
+                  <th class="px-3 py-3 text-center">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+      `;
+
+      let totalCut = 0, totalFill = 0;
+      const slagLabels = [], volumeData = [];
+
+      for (let i = 1; i < numPatok; i++) {
+        const elev1 = parseFloat(document.getElementById(`elev${i}`).value);
+        const elev2 = parseFloat(document.getElementById(`elev${i+1}`).value);
+        const jarak = parseFloat(document.getElementById(`jarak${i}`).value);
+        const lebar = parseFloat(document.getElementById(`lebar${i}`).value);
+
+        const delta1 = elev1 - elevRencana;
+        const delta2 = elev2 - elevRencana;
+
+        // Luas Penampang = ((|delta1| + |delta2|) / 2)
+        const luasPenampang = ((Math.abs(delta1) + Math.abs(delta2)) / 2);
+
+        // Fungsi bantuan untuk format baris dengan warna Cut/Fill industrial
+        const formatRow = (v, k) => `
+          <tr class="${k.includes('Galian') ? 'bg-amber-50' : 'bg-blue-50'} hover:bg-gray-100">
+            <td class="px-3 py-2 whitespace-nowrap font-medium text-primary-dark text-center">Slag ${i}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${elev1.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${elev2.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${delta1.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${delta2.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${jarak.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${luasPenampang.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center">${lebar.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap font-bold text-lg text-center ${k.includes('Galian') ? 'text-accent-orange' : 'text-primary-dark'}">${v.toFixed(2)}</td>
+            <td class="px-3 py-2 whitespace-nowrap text-center text-xs font-semibold">${k}</td>
+          </tr>
+        `;
+
+        if (delta1 * delta2 < 0) {
+          // Campuran (Cut dan Fill ada dalam satu slag), gunakan metode titik nol
+          const h0 = (Math.abs(delta1) * jarak) / (Math.abs(delta1) + Math.abs(delta2)); // Jarak ke titik nol dari Patok 1
+
+          const luasPenampangCut = 0.5 * Math.abs(delta1);
+          const luasPenampangFill = 0.5 * Math.abs(delta2);
+
+          // Hitung volume berdasarkan luas * lebar
+          const volCut = luasPenampangCut * h0 * lebar; // Volume untuk cut
+          const volFill = luasPenampangFill * (jarak - h0) * lebar; // Volume untuk fill
+
+          totalCut += volCut;
+          totalFill += volFill;
+
+          hasilHTML += formatRow(volCut, 'Galian (Campuran)');
+          hasilHTML += formatRow(volFill, 'Timbunan (Campuran)');
+
+          slagLabels.push(`Slag ${i} (G)`);
+          volumeData.push(volCut.toFixed(2));
+          slagLabels.push(`Slag ${i} (T)`);
+          volumeData.push(volFill.toFixed(2));
+        } else {
+          // Hanya Cut atau hanya Fill
+          const volume = luasPenampang * lebar * jarak; // Volume = Luas Penampang * Jarak * Lebar (Volume = L * T)
+          let ket = delta1 >= 0 && delta2 >= 0 ? 'Galian' : 'Timbunan';
+
+          if (ket === 'Galian') totalCut += volume; else totalFill += volume;
+
+          hasilHTML += formatRow(volume, ket);
+          slagLabels.push(`Slag ${i} (${ket.charAt(0)})`);
+          volumeData.push(volume.toFixed(2));
+        }
+      }
+
+      // Baris Total
+      hasilHTML += `
+              <!-- Garis pemisah tegas Industrial -->
+              <tr class="h-2 bg-gray-300"><td colspan="10"></td></tr>
+              <tr class="bg-accent-orange/20">
+                <th colspan="8" class="px-3 py-3 text-left text-primary-dark uppercase text-base">Total Volume Galian (Cut)</th>
+                <td colspan="2" class="px-3 py-3 font-extrabold text-accent-orange text-2xl text-center">${totalCut.toFixed(2)} m³</td>
+              </tr>
+              <tr class="bg-primary-dark/10">
+                <th colspan="8" class="px-3 py-3 text-left text-primary-dark uppercase text-base">Total Volume Timbunan (Fill)</th>
+                <td colspan="2" class="px-3 py-3 font-extrabold text-primary-dark text-2xl text-center">${totalFill.toFixed(2)} m³</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      outputArea.innerHTML = hasilHTML;
+      chartContainer.classList.remove('hidden');
+
+      tampilkanGrafik(slagLabels, volumeData, totalCut, totalFill);
+    }
+
+    // --- Chart Logic (Updated Colors) ---
+
+    function tampilkanGrafik(labels, data, totalCut, totalFill) {
+      const ctx = document.getElementById('volumeChart').getContext('2d');
+
+      // Tentukan warna berdasarkan tipe (Galian/Timbunan)
+      const backgroundColors = labels.map(label => {
+        if (label.includes('(G)')) return '#F97316'; // Orange/Cut
+        if (label.includes('(T)')) return '#0F172A'; // Navy/Fill
+        return '#3B82F6'; // Default
+      });
+
+      if (barChart) barChart.destroy();
+
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Volume per Slag (m³)',
+            data: data,
+            backgroundColor: backgroundColors,
+            borderColor: backgroundColors,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: 'Grafik Volume Cut (Orange) & Fill (Navy) per Slag',
+              font: { size: 16, weight: 'bold' },
+              color: '#1E293B'
+            },
+            tooltip: {
+                backgroundColor: '#0F172A', // Tooltip Navy Blue
+                titleColor: '#F97316', // Orange Title
+                bodyColor: '#F1F5F9', // Light Body
+                callbacks: {
+                    title: (context) => {
+                        const type = context[0].label.includes('(G)') ? 'Galian (Cut)' :
+                                     context[0].label.includes('(T)') ? 'Timbunan (Fill)' : 'Volume';
+                        return context[0].label.split(' ')[0] + ' ' + type;
+                    },
+                    afterTitle: (context) => {
+                        const totalLabel = `Total Cut: ${totalCut.toFixed(2)} m³ | Total Fill: ${totalFill.toFixed(2)} m³`;
+                        return totalLabel;
+                    }
+                }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(15, 23, 42, 0.1)' }, // Garis grid abu-abu tipis
+              title: { display: true, text: 'Volume (m³)', color: '#1E293B' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#1E293B' }
+            }
+          }
+        }
+      });
+      window.barChart = barChart; // Assign to global window object
+    }
+    
+    // Panggil generateInputTable saat halaman dimuat untuk tampilan awal
+    document.addEventListener('DOMContentLoaded', generateInputTable);
+
+        // --- Welcome Page Logic ---
+    function startApp() {
+      const welcomePage = document.getElementById('welcomePage');
+      welcomePage.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        welcomePage.style.display = 'none';
+      }, 500);
+    }
+
+
+  </script>
+</body>
+</html>
